@@ -8,7 +8,7 @@ pipeline {
   environment {
     DOCKER_IMAGE = 'ramanismael/devops-project'
     JIRA_ISSUE  = 'DA-5'
-    JIRA_SITE = 'jira-site' // This should match the site name you configured
+    JIRA_SITE = 'jira-site' // Make sure this matches your configured site name
   }
   stages {
     stage('Checkout') {
@@ -60,7 +60,9 @@ pipeline {
           script {
             if (fileExists('Dockerfile')) {
               sh "docker build -t ${DOCKER_IMAGE} ."
-              // Update Jira with build status
+              echo "Docker build completed successfully for build #${BUILD_NUMBER}"
+              
+              // Update Jira - only if Jira is configured
               try {
                 jiraAddComment(
                   site: "${JIRA_SITE}",
@@ -68,7 +70,7 @@ pipeline {
                   comment: "✅ Docker build completed successfully for build #${BUILD_NUMBER}"
                 )
               } catch (Exception e) {
-                echo "Failed to update Jira: ${e.getMessage()}"
+                echo "Jira update failed (this is normal if Jira isn't configured): ${e.getMessage()}"
               }
             } else {
               echo 'Dockerfile not found. Skipping Docker build...'
@@ -80,20 +82,24 @@ pipeline {
     }
     stage('Docker Push') {
       steps {
-        withDockerRegistry(
-          credentialsId: 'docker-hub-credentials',
-          url: 'https://index.docker.io/v1/'
-        ) {
-          sh "docker push ${DOCKER_IMAGE}"
-          // Update Jira with deployment status
-          try {
-            jiraAddComment(
-              site: "${JIRA_SITE}",
-              idOrKey: "${JIRA_ISSUE}",
-              comment: "🚀 Docker image pushed successfully! Image: ${DOCKER_IMAGE}:latest"
-            )
-          } catch (Exception e) {
-            echo "Failed to update Jira: ${e.getMessage()}"
+        script {
+          withDockerRegistry(
+            credentialsId: 'docker-hub-credentials',
+            url: 'https://index.docker.io/v1/'
+          ) {
+            sh "docker push ${DOCKER_IMAGE}"
+            echo "Docker image pushed successfully! Image: ${DOCKER_IMAGE}:latest"
+            
+            // Update Jira - only if Jira is configured
+            try {
+              jiraAddComment(
+                site: "${JIRA_SITE}",
+                idOrKey: "${JIRA_ISSUE}",
+                comment: "🚀 Docker image pushed successfully! Image: ${DOCKER_IMAGE}:latest"
+              )
+            } catch (Exception e) {
+              echo "Jira update failed (this is normal if Jira isn't configured): ${e.getMessage()}"
+            }
           }
         }
       }
@@ -102,24 +108,21 @@ pipeline {
   post {
     success {
       script {
+        echo "Pipeline completed successfully! Build #${BUILD_NUMBER} - All stages passed."
         try {
           jiraAddComment(
             site: "${JIRA_SITE}",
             idOrKey: "${JIRA_ISSUE}",
             comment: "✅ Pipeline completed successfully! Build #${BUILD_NUMBER} - All stages passed."
           )
-          jiraTransitionIssue(
-            site: "${JIRA_SITE}",
-            idOrKey: "${JIRA_ISSUE}",
-            input: [transition: [name: 'Done']] // Adjust transition name as needed
-          )
         } catch (Exception e) {
-          echo "Failed to update Jira: ${e.getMessage()}"
+          echo "Jira update failed (this is normal if Jira isn't configured): ${e.getMessage()}"
         }
       }
     }
     failure {
       script {
+        echo "Pipeline failed! Build #${BUILD_NUMBER} - Please check the logs."
         try {
           jiraAddComment(
             site: "${JIRA_SITE}",
@@ -127,7 +130,7 @@ pipeline {
             comment: "❌ Pipeline failed! Build #${BUILD_NUMBER} - Please check the logs."
           )
         } catch (Exception e) {
-          echo "Failed to update Jira: ${e.getMessage()}"
+          echo "Jira update failed (this is normal if Jira isn't configured): ${e.getMessage()}"
         }
       }
     }
