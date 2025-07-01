@@ -8,6 +8,7 @@ pipeline {
   environment {
     DOCKER_IMAGE = 'ramanismael/devops-project'
     JIRA_ISSUE  = 'DA-5'
+    JIRA_SITE = 'jira-site' // This should match the site name you configured
   }
   stages {
     stage('Checkout') {
@@ -59,6 +60,16 @@ pipeline {
           script {
             if (fileExists('Dockerfile')) {
               sh "docker build -t ${DOCKER_IMAGE} ."
+              // Update Jira with build status
+              try {
+                jiraAddComment(
+                  site: "${JIRA_SITE}",
+                  idOrKey: "${JIRA_ISSUE}",
+                  comment: "✅ Docker build completed successfully for build #${BUILD_NUMBER}"
+                )
+              } catch (Exception e) {
+                echo "Failed to update Jira: ${e.getMessage()}"
+              }
             } else {
               echo 'Dockerfile not found. Skipping Docker build...'
               currentBuild.result = 'UNSTABLE'
@@ -74,6 +85,49 @@ pipeline {
           url: 'https://index.docker.io/v1/'
         ) {
           sh "docker push ${DOCKER_IMAGE}"
+          // Update Jira with deployment status
+          try {
+            jiraAddComment(
+              site: "${JIRA_SITE}",
+              idOrKey: "${JIRA_ISSUE}",
+              comment: "🚀 Docker image pushed successfully! Image: ${DOCKER_IMAGE}:latest"
+            )
+          } catch (Exception e) {
+            echo "Failed to update Jira: ${e.getMessage()}"
+          }
+        }
+      }
+    }
+  }
+  post {
+    success {
+      script {
+        try {
+          jiraAddComment(
+            site: "${JIRA_SITE}",
+            idOrKey: "${JIRA_ISSUE}",
+            comment: "✅ Pipeline completed successfully! Build #${BUILD_NUMBER} - All stages passed."
+          )
+          jiraTransitionIssue(
+            site: "${JIRA_SITE}",
+            idOrKey: "${JIRA_ISSUE}",
+            input: [transition: [name: 'Done']] // Adjust transition name as needed
+          )
+        } catch (Exception e) {
+          echo "Failed to update Jira: ${e.getMessage()}"
+        }
+      }
+    }
+    failure {
+      script {
+        try {
+          jiraAddComment(
+            site: "${JIRA_SITE}",
+            idOrKey: "${JIRA_ISSUE}",
+            comment: "❌ Pipeline failed! Build #${BUILD_NUMBER} - Please check the logs."
+          )
+        } catch (Exception e) {
+          echo "Failed to update Jira: ${e.getMessage()}"
         }
       }
     }
