@@ -56,7 +56,14 @@ pipeline {
     stage('Docker Build') {
       steps {
         dir('src') {
-          sh "docker build -t ${DOCKER_IMAGE} ."
+          script {
+            if (fileExists('Dockerfile')) {
+              sh "docker build -t ${DOCKER_IMAGE} ."
+            } else {
+              echo 'Dockerfile not found. Skipping Docker build...'
+              currentBuild.result = 'UNSTABLE'
+            }
+          }
         }
       }
     }
