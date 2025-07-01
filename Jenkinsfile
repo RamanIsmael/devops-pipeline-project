@@ -1,14 +1,14 @@
 pipeline {
     agent {
         docker {
-            image 'node:20-alpine'  // image with Node.js and npm
-            args '-v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket if needed
+            image 'node:20-alpine'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
     environment {
         DOCKER_IMAGE = 'ramanismael/devops-project'
-        JIRA_ISSUE  = 'DA-5' // update with actual Jira issue key
+        JIRA_ISSUE  = 'DA-5'
     }
 
     stages {
@@ -43,7 +43,7 @@ pipeline {
 
         stage('Docker Push') {
             steps {
-                withDockerRegistry([credentialsId: 'docker-hub-credentials']) {
+                withDockerRegistry([credentialsId: 'docker-hub-credentials', url: 'https://index.docker.io/v1/']) {
                     sh "docker push ${DOCKER_IMAGE}"
                 }
             }
