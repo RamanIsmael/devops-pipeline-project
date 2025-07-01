@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:20-alpine'  // or any node image with npm
+        }
+    }
 
     environment {
         DOCKER_IMAGE = 'ramanismael/devops-project'
