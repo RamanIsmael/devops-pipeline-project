@@ -1,7 +1,8 @@
 pipeline {
     agent {
         docker {
-            image 'node:20-alpine'  // or any node image with npm
+            image 'node:20-alpine'  // image with Node.js and npm
+            args '-v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket if needed
         }
     }
 
@@ -40,11 +41,12 @@ pipeline {
             }
         }
 
-        steps {
-                sh 'docker build -t my-image .'
+        stage('Docker Push') {
+            steps {
                 withDockerRegistry([credentialsId: 'docker-hub-credentials']) {
-                    sh 'docker push my-image'
+                    sh "docker push ${DOCKER_IMAGE}"
                 }
+            }
         }
     }
 }
