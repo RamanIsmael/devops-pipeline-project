@@ -3,8 +3,10 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'ramanismael/devops-project'
-        JIRA_ISSUE  = 'DA-5'                      // ← Update this to your new issue key
+        JIRA_ISSUE  = 'DA-5' // update with actual Jira issue key
     }
+
+    stages {
         stage('Install Dependencies') {
             steps {
                 sh 'npm install'
@@ -24,7 +26,6 @@ pipeline {
                       -t performance-tests/test-plan.jmx \
                       -l performance-tests/results.jtl
                 '''
-                // Separate Performance report step:
                 perfReport sourceDataFiles: 'performance-tests/results.jtl'
             }
         }
@@ -45,7 +46,7 @@ pipeline {
                     sh '''
                         echo "$DOCKER_PASS" | docker login \
                           -u "$DOCKER_USER" --password-stdin
-                        docker push '${DOCKER_IMAGE}'
+                        docker push "$DOCKER_IMAGE"
                     '''
                 }
             }
