@@ -3,18 +3,8 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'ramanismael/devops-project'
-        JIRA_ISSUE  = 'DA-2'                      // ← Update this to your new issue key
+        JIRA_ISSUE  = 'DA-5'                      // ← Update this to your new issue key
     }
-
-    stages {
-        stage('Clone Repository') {
-            steps {
-                git credentialsId: 'github-creds',
-                    url: 'https://github.com/RamanIsmael/devops-pipeline-project.git'
-                echo "Linked Jira Issue: ${JIRA_ISSUE}"   // ← This will print DEVOPS-2
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
                 sh 'npm install'
